@@ -1,0 +1,207 @@
+---
+title: "Statistical Thinking HW 4"
+author: "Estrella Fuentes eaf2758"
+date: "2025-04-02"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+---
+### My GitHub Link - 
+\href{put_link}{Click Here}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+# downloading packages 
+
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+library(tidyverse)
+library(knitr)
+library(mosaic)
+library(MatchIt)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+armfold = read.csv("armfold.csv")
+```
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+# a. load examine the data
+# a.1 number of male and female student in the data set
+gender_table = table(armfold$Sex)
+# a.2 sample proportion of males who folder their left arm on top
+# a.3 sample proportion of females who
+left_hand = armfold %>% select(Sex, LonR_fold) %>% filter(LonR_fold == 1)
+sex_table = table(left_hand$Sex)
+
+prop_male = 50/106
+prop_female = 47/111
+
+# b. what is the difference in proportion between the two groups
+diff_prop = 0.4716981 - 0.4234234
+
+# c. compute a 95% interval for the differences in proportions
+prop.test(Sex ~ LonR_fold, data = armfold)
+
+# c.1 standard error for the difference in proportion
+standard_error_prop = sqrt(0.4716981*(1-0.4716981)/106 + 0.4234234*(1-0.4234234)/111)
+
+diff_prop - 2*standard_error_prop
+diff_prop + 2*standard_error_prop
+
+```
+
+## **Problem 1: Armfolding**
+
+  Our task for the first problem is to find if there was a difference in proportions between the proportion of men who fold their left arm on top versus the the proportion of females who fold their left arm on top. The study consisted of 217 participants, 111 being female, and 106 being male. The proportion of males who folded their left arm over their right was 47.2% and for females was 42.3%, the difference between their proportions was 4.8%. Using the prop.test built in R function, I got a 95% confidence interval of -0.094 and 0.192. Going back in time before we had R, old statisticians used math, and in this case would use De Moivre's equation for the standard error for the difference in proportions. De Moivre's equation is the square root of the proportion of group one, multiplied by one minus the proportion of group one, divided by the sample size of group one, plus the proportion of group two, multiplied by one minus the proportion of group two, divided by the sample size of group two. The values in used in the equation were 0.4716981 which was the proportion of group 1 and 106 the sample size, and 0.4234234 the proportion of group 2 and 111 the sample size. To calculate the confidence intervals I used a z value of 1.96 because this would give me a 95% confidence interval, and through the "hand-calculated" confidence interval I got -0.084 and 0.180. If we were to conduct the study multiple times, then we would expect the true difference in proportion between the male proportion who fold their left over their right arm and the females to fall within the interval -0.094 and 0.192 in 95% of the studies. The standard error I calculated above measures how much we can expect the difference between the two sample proportions to vary from one sample population to another. In this case sampling distribution is the statistic of  difference in proportions we would obtained if we sampled out population many times. From sample to sample the males and females drawn from the population would vary, resulting in different difference in proportions. The Central Limit Theorem justifies using a normal distribution because the theorem states that with a large enough sample all sampling distributions look the same and will become approximately normal. If someone told me "there is no difference in arm folding" after I had showed them my confidence interval of -0.94 and 0.192, I would start by saying since the confidence includes 0 meaning their could be no difference between between sex difference in arm folding but we cant say it with 100% certainty their no real or consistent difference. If the experiment were to be repeated across many different random samples of university students, the results would be many different confidence intervals because each sample would have different proportions, leading to different confidence intervals. What is true about the collection of all those intervals is that 95% of those confidence intervals would contain the true population difference in arm folding behavior between males and females.
+
+# **Problem 2: Get Out The Vote**
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+turnout = read.csv("turnout.csv")
+```
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+
+# a. preliminary analysis
+# a.1 proportion of those who received a GOTV call and who voted in 1998
+got_call = turnout %>% select(voted1998, GOTV_call) %>% filter(voted1998 == 1)
+
+table(got_call$GOTV_call)
+nrow(got_call)
+
+got_call_proportion = 160/4861
+got_nocall_proportion = 4701/4861
+
+# a.c confidence interval for the difference in the two proportions
+table_v1_v2 <- table(got_call$voted1998, got_call$GOTV_call)
+prop.test(table_v1_v2)
+```
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+# proving confounders had an effect on the difference in statistics 
+
+# regression model stats without age
+regression_model = lm(voted1998 ~ GOTV_call, data = turnout )
+summary(regression_model)
+
+
+```
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+#regression model stats with age
+with_age_rm = lm(voted1998 ~ GOTV_call + AGE, data = turnout )
+summary(with_age_rm)
+
+# confidence interval
+confint(with_age_rm)
+
+```
+## **Looking at Cofounders**
+
+### **Age as a Cofounder**
+
+The regression analysis shows that receiving a GOTV call significantly increases the likelihood of voting in 1998, with a 95% confidence interval for the coefficient ranging from 0.0786 to 0.1993. Additionally, age is positively associated with voting in 1998, with a 95% confidence interval for the age coefficient ranging from 0.0068 to 0.0077, indicating that older individuals are slightly more likely to vote. To determine whether age was a cofounder I used a regression model to intent to make a fair comparison between whether age or GOTV impacted people who voted. The results showed that the coefficient of GOTV call is slightly higher in the model without age (0.2035), meaning that without accounting for age, the effect of GOTV call on voting is stronger. In comparison, the regression model with age has a significantly higher r-squared (of 0.0789) meaning age contributes to voting behavior. Finally we can assume age is cofounder because the coefficient suggest that every one year increase in age, the likelihood in voting increases by 0.0727%, this suggest is an important factor in predicting voting behavior and is confounding the relationship between the GOTV call and voting in 1998.
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+
+# regression model to get my confidence  interval
+with_voted_rm = lm(voted1998 ~ GOTV_call + voted1996, data = turnout )
+summary(with_voted_rm)
+
+# confidence interval
+confint(with_voted_rm)
+
+# Chi-Square test to look statistical significance 
+chisq.test(table(turnout$GOTV_call, turnout$voted1996))
+
+chisq.test(table(turnout$GOTV_call, turnout$voted1998))
+
+chisq.test(table(turnout$voted1996, turnout$voted1998))
+
+
+```
+
+### **Voted 1996 as a Cofounder**
+
+To test whether voting in the 1996 election is a confounder, we examined whether voting in 1996 is related to receiving a GOTV call and voting in 1998. The results of the Chi-Squared test showed a p-value of 2.188e-08 between GOTV call and voting in 1996, indicating a significant association between whether a person received a GOTV call and whether they voted in 1996. In other words, people who voted in 1996 were more likely to receive a GOTV call. Additionally, the extremely small p-value of  2.2e-16 indicated a very strong and significant association between voting in 1996 and voting in 1998. The regression analysis further confirmed that voting in 1996 strongly predicts voting in 1998 95% confidence interval of 0.3912 to 0.4254, these results suggest that voting in 1996 is indeed a confounder in the relationship between receiving a GOTV call and voting in 1998.
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+# finding whether being associated to a major political party is cofounder through a regression model
+
+# using the regression model above of gotv_call and voted 1998
+summary(regression_model)
+
+```
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+# regression model with being associated to a political party
+with_pty_rm = lm(voted1998 ~ GOTV_call + MAJORPTY, data = turnout )
+
+# confidence interval
+confint(with_pty_rm)
+summary(with_pty_rm)
+
+# finding a relationship between majotpty and gotvcall
+chisq.test(table(turnout$GOTV_call, turnout$MAJORPTY))
+
+chisq.test(table(turnout$MAJORPTY, turnout$voted1998))
+```
+
+### **Major Political Party as Cofounder** 
+Similar to the techniques I used above, such as regression models and the chi-squared test, I found that being part of a Major Political Party is a confounder that affects whether you get a call and whether a person is more likely to vote. First, I wrote some code to perform a chi-squared test, and the result showed a strong and significant relationship between voting and being associated with a major political party, which we can assume due to the extremely small p-value of 2.2e-16. Secondly, to check for association with the GOTV call, I noticed that the relationship between the two was very slight because of the p-value of 0.0505. When looking at the coefficient of the linear regression model of GOTV call and voted 1998, it was 0.204 and only decreased slightly to a coefficient of 0.196 when I looked at the regression model adjusted by MAJORPTY.
+
+## **Debugging Cofounders**
+
+```{r}
+regression_model <- lm(voted1998 ~ GOTV_call + voted1996 + AGE + MAJORPTY, data = turnout)
+summary(regression_model)
+
+# Visualize AGE and MAJORPTY by GOTV_call
+ggplot(turnout, aes(x = AGE, fill = as.factor(GOTV_call))) + 
+  geom_histogram(position = "dodge") +
+  labs(title = "AGE distribution by GOTV Call", x = "Age", y = "Count")
+
+ggplot(turnout, aes(x = as.factor(MAJORPTY), fill = as.factor(GOTV_call))) + 
+  geom_bar(position = "dodge") +
+  labs(title = "Party affiliation by GOTV Call", x = "Major Party", y = "Count")
+
+# Voted1996 by GOTV Call
+ggplot(turnout, aes(x = as.factor(voted1996), fill = as.factor(GOTV_call))) + 
+  geom_bar(position = "dodge") +
+  labs(title = "Voted 1996 by GOTV Call", x = "Voted 1996", y = "Count")
+```
+
+
+
+```{r, echo=FALSE, include=FALSE, results='hide'}
+# cleaning up the data set
+# removed the first column to make the dat set only contain binary items
+
+# c. match it!
+turnout_match = matchit(GOTV_call ~ voted1996 + AGE + MAJORPTY, data = turnout, ratio=5)
+turnout_matched = match.data(turnout_match)
+
+# c.1 part a again
+got_call_pt2 = turnout_matched %>% select(voted1998, GOTV_call) %>% filter(voted1998 == 1)
+
+table(got_call_pt2$GOTV_call)
+nrow(got_call_pt2)
+
+got_call_parttwo = 158/851
+got_nocall_parttwo = 693/851
+
+table_part2 <- table(got_call_pt2$voted1998, got_call_pt2$GOTV_call)
+prop.test(table_part2)
+```
+
+
+
+
+
+
+
